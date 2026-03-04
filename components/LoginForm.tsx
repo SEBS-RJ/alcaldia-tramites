@@ -1,4 +1,8 @@
-import React, { useState } from "react";
+// ─── LoginForm.tsx — T-01, T-02, T-03, T-04 (HU-1) ─────────────────────────
+// Formulario de login conectado a Supabase.
+// Valida credenciales reales y guarda el rol en el contexto de sesión.
+
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -8,15 +12,16 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-} from "react-native";
-import { StatusBar } from "expo-status-bar";
-import { Ionicons, MaterialIcons } from "@expo/vector-icons";
+} from 'react-native';
+import { StatusBar } from 'expo-status-bar';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 
-import LoginHeader from "./LoginHeader";
-import LoginFooter from "./LoginFooter";
-import LoginSuccess from "./LoginSuccess";
-import { USUARIOS_PRUEBA } from "../data/usuariosDemo";
-import { styles } from "../styles/loginStyles";
+import LoginHeader from './LoginHeader';
+import LoginFooter from './LoginFooter';
+import PantallaRol from './PantallaRol';
+import { iniciarSesion } from '../services/authService';
+import { useSesion } from '../context/SesionContext';
+import { styles } from '../styles/loginStyles';
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
@@ -29,42 +34,39 @@ interface FormErrors {
 // ─── Componente ───────────────────────────────────────────────────────────────
 
 export default function LoginForm() {
-  // Estado del formulario
-  const [usuario, setUsuario] = useState<string>("");
-  const [contrasena, setContrasena] = useState<string>("");
+  const { usuarioActivo, iniciarSesionContexto, cerrarSesionContexto } = useSesion();
+
+  const [usuario, setUsuario] = useState<string>('');
+  const [contrasena, setContrasena] = useState<string>('');
   const [mostrarContrasena, setMostrarContrasena] = useState<boolean>(false);
   const [cargando, setCargando] = useState<boolean>(false);
-  const [loginExitoso, setLoginExitoso] = useState<boolean>(false);
-  const [rolUsuario, setRolUsuario] = useState<string>("");
 
-  // Estado de errores por campo
   const [errores, setErrores] = useState<FormErrors>({
-    usuario: "",
-    contrasena: "",
-    credenciales: "",
+    usuario: '',
+    contrasena: '',
+    credenciales: '',
   });
 
-  // ── Validación ──────────────────────────────────────────────────────────
+  // ── Validación de campos ────────────────────────────────────────────────
 
   const validarFormulario = (): boolean => {
     const nuevosErrores: FormErrors = {
-      usuario: "",
-      contrasena: "",
-      credenciales: "",
+      usuario: '',
+      contrasena: '',
+      credenciales: '',
     };
     let esValido = true;
 
     if (!usuario.trim()) {
-      nuevosErrores.usuario = "El usuario es obligatorio.";
+      nuevosErrores.usuario = 'El usuario es obligatorio.';
       esValido = false;
     }
 
     if (!contrasena.trim()) {
-      nuevosErrores.contrasena = "La contraseña es obligatoria.";
+      nuevosErrores.contrasena = 'La contraseña es obligatoria.';
       esValido = false;
     } else if (contrasena.length < 4) {
-      nuevosErrores.contrasena =
-        "La contraseña debe tener al menos 4 caracteres.";
+      nuevosErrores.contrasena = 'La contraseña debe tener al menos 4 caracteres.';
       esValido = false;
     }
 
@@ -72,59 +74,51 @@ export default function LoginForm() {
     return esValido;
   };
 
-  // ── Lógica de login ─────────────────────────────────────────────────────
+  // ── Login contra Supabase (T-02) ────────────────────────────────────────
 
   const handleLogin = async () => {
-    // Limpiar errores previos
-    setErrores({ usuario: "", contrasena: "", credenciales: "" });
+    setErrores({ usuario: '', contrasena: '', credenciales: '' });
 
     if (!validarFormulario()) return;
 
-    // Simular llamada al backend (1.5 segundos)
     setCargando(true);
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+
+    // Llamada real al servicio de autenticación
+    const resultado = await iniciarSesion(usuario, contrasena);
+
     setCargando(false);
 
-    // Verificar contra credenciales simuladas
-    const usuarioEncontrado = USUARIOS_PRUEBA.find(
-      (u) =>
-        u.usuario === usuario.trim().toLowerCase() &&
-        u.contrasena === contrasena,
-    );
-
-    if (usuarioEncontrado) {
-      setRolUsuario(usuarioEncontrado.rol);
-      setLoginExitoso(true);
+    if (resultado.exito && resultado.usuarioSesion) {
+      // Guardar en contexto global — activa T-03 (control por rol)
+      iniciarSesionContexto(resultado.usuarioSesion);
     } else {
       setErrores((prev) => ({
         ...prev,
-        credenciales: "Usuario o contraseña incorrectos. Intente nuevamente.",
+        credenciales: resultado.error ?? 'Error al iniciar sesión.',
       }));
     }
   };
 
-  // ── Pantalla de éxito ───────────────────────────────────────────────────
+  // ── Si hay sesión activa, mostrar pantalla según rol (T-03) ────────────
 
-  if (loginExitoso) {
+  if (usuarioActivo) {
     return (
-      <LoginSuccess
-        rol={rolUsuario}
+      <PantallaRol
         onLogout={() => {
-          setLoginExitoso(false);
-          setUsuario("");
-          setContrasena("");
-          setRolUsuario("");
+          cerrarSesionContexto();
+          setUsuario('');
+          setContrasena('');
         }}
       />
     );
   }
 
-  // ── Formulario principal ────────────────────────────────────────────────
+  // ── Formulario de login ─────────────────────────────────────────────────
 
   return (
     <KeyboardAvoidingView
       style={styles.keyboardContainer}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <StatusBar style="light" />
       <ScrollView
@@ -132,10 +126,8 @@ export default function LoginForm() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {/* Cabecera con logo institucional */}
         <LoginHeader />
 
-        {/* Tarjeta del formulario */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Iniciar Sesión</Text>
           <Text style={styles.cardSubtitle}>
@@ -160,7 +152,7 @@ export default function LoginForm() {
                 onChangeText={(text) => {
                   setUsuario(text);
                   if (errores.usuario)
-                    setErrores((prev) => ({ ...prev, usuario: "" }));
+                    setErrores((prev) => ({ ...prev, usuario: '' }));
                 }}
                 autoCapitalize="none"
                 autoCorrect={false}
@@ -190,21 +182,20 @@ export default function LoginForm() {
                 onChangeText={(text) => {
                   setContrasena(text);
                   if (errores.contrasena)
-                    setErrores((prev) => ({ ...prev, contrasena: "" }));
+                    setErrores((prev) => ({ ...prev, contrasena: '' }));
                 }}
                 secureTextEntry={!mostrarContrasena}
                 autoCapitalize="none"
                 autoCorrect={false}
                 editable={!cargando}
               />
-              {/* Botón mostrar / ocultar contraseña */}
               <TouchableOpacity
                 onPress={() => setMostrarContrasena(!mostrarContrasena)}
                 style={styles.eyeButton}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
                 <Ionicons
-                  name={mostrarContrasena ? "eye-off-outline" : "eye-outline"}
+                  name={mostrarContrasena ? 'eye-off-outline' : 'eye-outline'}
                   size={20}
                   color="#6b7280"
                 />
@@ -239,29 +230,8 @@ export default function LoginForm() {
               <Text style={styles.loginButtonText}>Ingresar al Sistema</Text>
             )}
           </TouchableOpacity>
-
-          {/* ── Usuarios habilitados (para presentación) ── */}
-          <View style={styles.credencialesBox}>
-            <View style={styles.credencialesTitleRow}>
-              <Ionicons name="key-outline" size={13} color="#0369a1" />
-              <Text style={styles.credencialesTitle}>Usuarios habilitados</Text>
-            </View>
-            <Text style={styles.credencialesItem}>
-              <Text style={styles.credencialesBold}>admin</Text> / 1234 →
-              Administrador
-            </Text>
-            <Text style={styles.credencialesItem}>
-              <Text style={styles.credencialesBold}>funcionario</Text> / 1234 →
-              Funcionario Municipal
-            </Text>
-            <Text style={styles.credencialesItem}>
-              <Text style={styles.credencialesBold}>jefe</Text> / 1234 → Jefe de
-              Área
-            </Text>
-          </View>
         </View>
 
-        {/* Pie de página con info del sprint */}
         <LoginFooter />
       </ScrollView>
     </KeyboardAvoidingView>

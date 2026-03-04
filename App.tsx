@@ -1,17 +1,25 @@
-import React from "react";
-import { Platform } from "react-native";
-import { SafeAreaProvider } from "react-native-safe-area-context";
-import LoginScreen from "./screens/LoginScreen";
+import React from 'react';
+import { Platform } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { SesionProvider } from './context/SesionContext';
+import LoginScreen from './screens/LoginScreen';
 
-// En web, SafeAreaProvider puede causar pantalla en blanco,
-// por eso se omite en esa plataforma.
+// SesionProvider envuelve toda la app para que cualquier
+// pantalla pueda acceder al usuario activo y su rol (T-03).
 export default function App() {
-  if (Platform.OS === "web") {
-    return <LoginScreen />;
+  if (Platform.OS === 'web') {
+    return (
+      <SesionProvider>
+        <LoginScreen />
+      </SesionProvider>
+    );
   }
+
   return (
     <SafeAreaProvider>
-      <LoginScreen />
+      <SesionProvider>
+        <LoginScreen />
+      </SesionProvider>
     </SafeAreaProvider>
   );
 }
