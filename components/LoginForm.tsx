@@ -1,8 +1,7 @@
-// ─── LoginForm.tsx — T-01, T-02, T-03, T-04 (HU-1) ─────────────────────────
-// Formulario de login conectado a Supabase.
-// Valida credenciales reales y guarda el rol en el contexto de sesión.
+// ─── LoginForm.tsx — T-01, T-02, T-03, T-04, T-05 (HU-1) ───────────────────
+// Formulario de login conectado a Supabase con hash SHA-256 y auditoría.
 
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -12,16 +11,16 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-} from 'react-native';
-import { StatusBar } from 'expo-status-bar';
-import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+} from "react-native";
+import { StatusBar } from "expo-status-bar";
+import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 
-import LoginHeader from './LoginHeader';
-import LoginFooter from './LoginFooter';
-import PantallaRol from './PantallaRol';
-import { iniciarSesion } from '../services/authService';
-import { useSesion } from '../context/SesionContext';
-import { styles } from '../styles/loginStyles';
+import LoginHeader from "./LoginHeader";
+import LoginFooter from "./LoginFooter";
+import PantallaRol from "./PantallaRol";
+import { iniciarSesion, cerrarSesion } from "../services/authService";
+import { useSesion } from "../context/SesionContext";
+import { styles } from "../styles/loginStyles";
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
@@ -34,39 +33,41 @@ interface FormErrors {
 // ─── Componente ───────────────────────────────────────────────────────────────
 
 export default function LoginForm() {
-  const { usuarioActivo, iniciarSesionContexto, cerrarSesionContexto } = useSesion();
+  const { usuarioActivo, iniciarSesionContexto, cerrarSesionContexto } =
+    useSesion();
 
-  const [usuario, setUsuario] = useState<string>('');
-  const [contrasena, setContrasena] = useState<string>('');
+  const [usuario, setUsuario] = useState<string>("");
+  const [contrasena, setContrasena] = useState<string>("");
   const [mostrarContrasena, setMostrarContrasena] = useState<boolean>(false);
   const [cargando, setCargando] = useState<boolean>(false);
 
   const [errores, setErrores] = useState<FormErrors>({
-    usuario: '',
-    contrasena: '',
-    credenciales: '',
+    usuario: "",
+    contrasena: "",
+    credenciales: "",
   });
 
   // ── Validación de campos ────────────────────────────────────────────────
 
   const validarFormulario = (): boolean => {
     const nuevosErrores: FormErrors = {
-      usuario: '',
-      contrasena: '',
-      credenciales: '',
+      usuario: "",
+      contrasena: "",
+      credenciales: "",
     };
     let esValido = true;
 
     if (!usuario.trim()) {
-      nuevosErrores.usuario = 'El usuario es obligatorio.';
+      nuevosErrores.usuario = "El usuario es obligatorio.";
       esValido = false;
     }
 
     if (!contrasena.trim()) {
-      nuevosErrores.contrasena = 'La contraseña es obligatoria.';
+      nuevosErrores.contrasena = "La contraseña es obligatoria.";
       esValido = false;
     } else if (contrasena.length < 4) {
-      nuevosErrores.contrasena = 'La contraseña debe tener al menos 4 caracteres.';
+      nuevosErrores.contrasena =
+        "La contraseña debe tener al menos 4 caracteres.";
       esValido = false;
     }
 
@@ -74,51 +75,49 @@ export default function LoginForm() {
     return esValido;
   };
 
-  // ── Login contra Supabase (T-02) ────────────────────────────────────────
+  // ── Login con hash y auditoría (T-02, T-05 HU-1) ───────────────────────
 
   const handleLogin = async () => {
-    setErrores({ usuario: '', contrasena: '', credenciales: '' });
-
+    setErrores({ usuario: "", contrasena: "", credenciales: "" });
     if (!validarFormulario()) return;
 
     setCargando(true);
-
-    // Llamada real al servicio de autenticación
     const resultado = await iniciarSesion(usuario, contrasena);
-
     setCargando(false);
 
     if (resultado.exito && resultado.usuarioSesion) {
-      // Guardar en contexto global — activa T-03 (control por rol)
       iniciarSesionContexto(resultado.usuarioSesion);
     } else {
       setErrores((prev) => ({
         ...prev,
-        credenciales: resultado.error ?? 'Error al iniciar sesión.',
+        credenciales: resultado.error ?? "Error al iniciar sesión.",
       }));
     }
   };
 
-  // ── Si hay sesión activa, mostrar pantalla según rol (T-03) ────────────
+  // ── Cierre de sesión con auditoría (T-04 HU-1, T-02 HU-5) ─────────────
+
+  const handleLogout = async () => {
+    if (usuarioActivo) {
+      await cerrarSesion(usuarioActivo);
+    }
+    cerrarSesionContexto();
+    setUsuario("");
+    setContrasena("");
+  };
+
+  // ── Si hay sesión activa, mostrar pantalla por rol (T-03) ───────────────
 
   if (usuarioActivo) {
-    return (
-      <PantallaRol
-        onLogout={() => {
-          cerrarSesionContexto();
-          setUsuario('');
-          setContrasena('');
-        }}
-      />
-    );
+    return <PantallaRol onLogout={handleLogout} />;
   }
 
-  // ── Formulario de login ─────────────────────────────────────────────────
+  // ── Formulario principal ────────────────────────────────────────────────
 
   return (
     <KeyboardAvoidingView
       style={styles.keyboardContainer}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <StatusBar style="light" />
       <ScrollView
@@ -152,7 +151,7 @@ export default function LoginForm() {
                 onChangeText={(text) => {
                   setUsuario(text);
                   if (errores.usuario)
-                    setErrores((prev) => ({ ...prev, usuario: '' }));
+                    setErrores((prev) => ({ ...prev, usuario: "" }));
                 }}
                 autoCapitalize="none"
                 autoCorrect={false}
@@ -182,7 +181,7 @@ export default function LoginForm() {
                 onChangeText={(text) => {
                   setContrasena(text);
                   if (errores.contrasena)
-                    setErrores((prev) => ({ ...prev, contrasena: '' }));
+                    setErrores((prev) => ({ ...prev, contrasena: "" }));
                 }}
                 secureTextEntry={!mostrarContrasena}
                 autoCapitalize="none"
@@ -195,7 +194,7 @@ export default function LoginForm() {
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
                 <Ionicons
-                  name={mostrarContrasena ? 'eye-off-outline' : 'eye-outline'}
+                  name={mostrarContrasena ? "eye-off-outline" : "eye-outline"}
                   size={20}
                   color="#6b7280"
                 />
