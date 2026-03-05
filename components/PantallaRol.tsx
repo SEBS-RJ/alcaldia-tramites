@@ -1,54 +1,65 @@
 // ─── PantallaRol.tsx — T-03 (HU-1) ──────────────────────────────────────────
-// Muestra contenido diferente según el rol del usuario autenticado.
-// Reemplaza a LoginSuccess — ahora el acceso se restringe por permisos reales.
+// Muestra módulos según el rol del usuario autenticado.
+// Navegación local con useState hasta implementar React Navigation en Sprint 2.
 
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useSesion } from '../context/SesionContext';
 import { styles } from '../styles/loginStyles';
+import AuditoriaScreen from '../screens/AuditoriaScreen';
+import RegistroTramiteScreen from '../screens/RegistroTramiteScreen';
 
 interface Props {
   onLogout: () => void;
 }
 
-// ─── Configuración de acceso por rol ─────────────────────────────────────────
-// T-03: Define qué módulos ve cada rol.
+// ─── Módulos por rol ──────────────────────────────────────────────────────────
 
 const MODULOS_POR_ROL = {
   'Administrador': [
-    { icono: 'people-outline',        etiqueta: 'Gestión de Usuarios' },
-    { icono: 'document-text-outline', etiqueta: 'Todos los Trámites' },
-    { icono: 'settings-outline',      etiqueta: 'Configuración del Sistema' },
-    { icono: 'bar-chart-outline',     etiqueta: 'Reportes y Auditoría' },
+    { icono: 'people-outline',        etiqueta: 'Gestión de Usuarios',       pantalla: null },
+    { icono: 'document-text-outline', etiqueta: 'Todos los Trámites',         pantalla: null },
+    { icono: 'settings-outline',      etiqueta: 'Configuración del Sistema',  pantalla: null },
+    { icono: 'bar-chart-outline',     etiqueta: 'Reportes y Auditoría',       pantalla: 'auditoria' },
   ],
   'Jefe de Área': [
-    { icono: 'checkmark-circle-outline', etiqueta: 'Aprobar / Rechazar Trámites' },
-    { icono: 'document-text-outline',    etiqueta: 'Trámites del Área' },
-    { icono: 'bar-chart-outline',        etiqueta: 'Reportes del Área' },
+    { icono: 'checkmark-circle-outline', etiqueta: 'Aprobar / Rechazar Trámites', pantalla: null },
+    { icono: 'document-text-outline',    etiqueta: 'Trámites del Área',           pantalla: null },
+    { icono: 'bar-chart-outline',        etiqueta: 'Reportes del Área',           pantalla: null },
   ],
   'Funcionario Municipal': [
-    { icono: 'document-text-outline', etiqueta: 'Trámites Asignados' },
-    { icono: 'attach-outline',        etiqueta: 'Revisar Documentos' },
-    { icono: 'git-branch-outline',    etiqueta: 'Derivar Trámite' },
+    { icono: 'add-circle-outline',    etiqueta: 'Registrar Nuevo Trámite',  pantalla: 'registro_tramite' },
+    { icono: 'document-text-outline', etiqueta: 'Trámites Asignados',       pantalla: null },
+    { icono: 'attach-outline',        etiqueta: 'Revisar Documentos',       pantalla: null },
+    { icono: 'git-branch-outline',    etiqueta: 'Derivar Trámite',          pantalla: null },
   ],
 } as const;
 
-// ─── Colores por rol ──────────────────────────────────────────────────────────
-
 const COLOR_POR_ROL: Record<string, string> = {
-  'Administrador':       '#7c3aed',
-  'Jefe de Área':        '#0369a1',
-  'Funcionario Municipal': '#0f2554',
+  'Administrador':        '#7c3aed',
+  'Jefe de Área':         '#0369a1',
+  'Funcionario Municipal':'#0f2554',
 };
 
 // ─── Componente ───────────────────────────────────────────────────────────────
 
 export default function PantallaRol({ onLogout }: Props) {
-  const { usuarioActivo, tienePermiso } = useSesion();
+  const { usuarioActivo } = useSesion();
+  const [pantallaActiva, setPantallaActiva] = useState<string | null>(null);
 
   if (!usuarioActivo) return null;
+
+  const volver = () => setPantallaActiva(null);
+
+  if (pantallaActiva === 'auditoria') {
+    return <AuditoriaScreen onVolver={volver} />;
+  }
+
+  if (pantallaActiva === 'registro_tramite') {
+    return <RegistroTramiteScreen onVolver={volver} />;
+  }
 
   const modulos = MODULOS_POR_ROL[usuarioActivo.rol] ?? [];
   const colorRol = COLOR_POR_ROL[usuarioActivo.rol] ?? '#0f2554';
@@ -57,8 +68,11 @@ export default function PantallaRol({ onLogout }: Props) {
     <View style={styles.rolContainer}>
       <StatusBar style="light" />
 
-      {/* ── Cabecera de bienvenida ── */}
+      {/* ── Cabecera ── */}
       <View style={[styles.rolHeader, { backgroundColor: colorRol }]}>
+        <View style={styles.successIconCircle}>
+          <Ionicons name="checkmark" size={32} color="#16a34a" />
+        </View>
         <Text style={styles.rolBienvenida}>¡Bienvenido!</Text>
         <Text style={styles.rolUsuario}>{usuarioActivo.usuario}</Text>
         <View style={styles.rolBadge}>
@@ -66,7 +80,7 @@ export default function PantallaRol({ onLogout }: Props) {
         </View>
       </View>
 
-      {/* ── Módulos habilitados para este rol (T-03) ── */}
+      {/* ── Módulos ── */}
       <ScrollView contentContainerStyle={styles.rolScrollContent}>
         <Text style={styles.rolSeccionTitle}>Módulos habilitados</Text>
 
@@ -74,29 +88,28 @@ export default function PantallaRol({ onLogout }: Props) {
           <TouchableOpacity
             key={index}
             style={styles.moduloCard}
-            activeOpacity={0.75}
+            activeOpacity={modulo.pantalla ? 0.75 : 0.4}
+            onPress={() => modulo.pantalla && setPantallaActiva(modulo.pantalla)}
           >
             <View style={[styles.moduloIconCircle, { backgroundColor: colorRol + '18' }]}>
-              <Ionicons
-                name={modulo.icono as any}
-                size={24}
-                color={colorRol}
-              />
+              <Ionicons name={modulo.icono as any} size={24} color={colorRol} />
             </View>
             <Text style={styles.moduloEtiqueta}>{modulo.etiqueta}</Text>
-            <Ionicons name="chevron-forward" size={18} color="#9ca3af" />
+            <Ionicons
+              name={modulo.pantalla ? 'chevron-forward' : 'time-outline'}
+              size={18}
+              color={modulo.pantalla ? '#6b7280' : '#d1d5db'}
+            />
           </TouchableOpacity>
         ))}
 
-        {/* ── Nota de sprint ── */}
         <View style={styles.sprintNote}>
           <Ionicons name="information-circle-outline" size={13} color="#6b7280" />
           <Text style={styles.sprintNoteText}>
-            Sprint 1 completado · Módulos disponibles en próximos sprints
+            Sprint 2 en curso · Módulos restantes disponibles próximamente
           </Text>
         </View>
 
-        {/* ── Botón cerrar sesión ── */}
         <TouchableOpacity style={styles.logoutButton} onPress={onLogout}>
           <Ionicons name="log-out-outline" size={18} color="#374151" />
           <Text style={styles.logoutButtonText}>Cerrar Sesión</Text>

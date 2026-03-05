@@ -1,7 +1,3 @@
-// ─── Servicio de Autenticación (T-02, T-05 HU-1) ────────────────────────────
-// Valida credenciales contra Supabase usando SHA-256 (T-05).
-// Registra automáticamente cada intento en auditoría (T-02 HU-5).
-
 import { supabase } from '../lib/supabase';
 import { hashSHA256 } from './hashService';
 import { registrarAccion } from './auditoriaService';
@@ -22,12 +18,6 @@ export interface ResultadoLogin {
   error?: string;
 }
 
-// ─── T-02 HU-1 + T-05 HU-1: Login con hash y auditoría ──────────────────────
-
-/**
- * Valida usuario y contraseña hasheada contra la base de datos.
- * Registra el intento (exitoso o fallido) en la tabla de auditoría.
- */
 export async function iniciarSesion(
   usuario: string,
   contrasena: string

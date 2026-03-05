@@ -1,7 +1,3 @@
-// ─── Servicio de Hash (T-05 HU-1) ────────────────────────────────────────────
-// Genera un hash SHA-256 idéntico al que usa PostgreSQL con sha256()::bytea
-// Esto garantiza que la comparación en la BD sea correcta.
-
 /**
  * Convierte un texto a SHA-256 en hexadecimal.
  * Equivale a: encode(sha256(texto::bytea), 'hex') en PostgreSQL.
