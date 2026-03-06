@@ -70,9 +70,6 @@ export default function PantallaRol({ onLogout }: Props) {
 
       {/* ── Cabecera ── */}
       <View style={[styles.rolHeader, { backgroundColor: colorRol }]}>
-        <View style={styles.successIconCircle}>
-          <Ionicons name="checkmark" size={32} color="#16a34a" />
-        </View>
         <Text style={styles.rolBienvenida}>¡Bienvenido!</Text>
         <Text style={styles.rolUsuario}>{usuarioActivo.usuario}</Text>
         <View style={styles.rolBadge}>

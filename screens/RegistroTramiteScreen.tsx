@@ -191,9 +191,6 @@ export default function RegistroTramiteScreen({ onVolver }: Props) {
           <Text style={styles.cabeceraTitulo}>Trámite Registrado</Text>
         </View>
         <ScrollView contentContainerStyle={styles.exitoContenido}>
-          <View style={styles.exitoIcono}>
-            <Ionicons name="checkmark-circle" size={64} color="#16a34a" />
-          </View>
           <Text style={styles.exitoTitulo}>¡Trámite registrado con éxito!</Text>
 
           <View style={styles.exitoCard}>
