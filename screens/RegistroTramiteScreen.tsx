@@ -3,7 +3,7 @@
 // T-01: Campos obligatorios con estructura de datos y validaciones visuales.
 // T-04: Validación que impide guardar con campos incompletos.
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -13,31 +13,33 @@ import {
   ActivityIndicator,
   StyleSheet,
   Platform,
-} from 'react-native';
-import { Ionicons, MaterialIcons } from '@expo/vector-icons';
-import { StatusBar } from 'expo-status-bar';
-import { useSesion } from '../context/SesionContext';
+} from "react-native";
+import { Ionicons, MaterialIcons } from "@expo/vector-icons";
+import { StatusBar } from "expo-status-bar";
+import { useSesion } from "../context/SesionContext";
 import {
   registrarTramite,
   TipoTramite,
   DatosTramite,
   Tramite,
-} from '../services/tramiteService';
+  obtenerTiposActivos,
+} from "../services/tramiteService";
+import SelectorConBusqueda from "../components/SelectorConBusqueda";
 
 // ─── Tipos de trámite disponibles ────────────────────────────────────────────
 
 const TIPOS_TRAMITE: { valor: TipoTramite; icono: string; dias: number }[] = [
-  { valor: 'Licencia de funcionamiento', icono: 'business-outline',    dias: 15 },
-  { valor: 'Patente',                    icono: 'ribbon-outline',       dias: 10 },
-  { valor: 'Certificación',              icono: 'document-outline',     dias:  7 },
-  { valor: 'Reclamo vecinal',            icono: 'megaphone-outline',    dias: 20 },
-  { valor: 'Solicitud de obra',          icono: 'construct-outline',    dias: 30 },
+  { valor: "Licencia de funcionamiento", icono: "business-outline", dias: 15 },
+  { valor: "Patente", icono: "ribbon-outline", dias: 10 },
+  { valor: "Certificación", icono: "document-outline", dias: 7 },
+  { valor: "Reclamo vecinal", icono: "megaphone-outline", dias: 20 },
+  { valor: "Solicitud de obra", icono: "construct-outline", dias: 30 },
 ];
 
 // ─── Campos obligatorios del formulario ──────────────────────────────────────
 
 interface FormularioTramite {
-  tipo: TipoTramite | '';
+  tipo: TipoTramite | "";
   solicitante_nombre: string;
   solicitante_ci: string;
   solicitante_telefono: string;
@@ -56,12 +58,12 @@ interface ErroresFormulario {
 }
 
 const ERRORES_INICIAL: ErroresFormulario = {
-  tipo: '',
-  solicitante_nombre: '',
-  solicitante_ci: '',
-  solicitante_telefono: '',
-  descripcion: '',
-  direccion: '',
+  tipo: "",
+  solicitante_nombre: "",
+  solicitante_ci: "",
+  solicitante_telefono: "",
+  descripcion: "",
+  direccion: "",
 };
 
 // ─── Componente ───────────────────────────────────────────────────────────────
@@ -75,19 +77,35 @@ export default function RegistroTramiteScreen({ onVolver }: Props) {
 
   // Estado del formulario
   const [form, setForm] = useState<FormularioTramite>({
-    tipo: '',
-    solicitante_nombre: '',
-    solicitante_ci: '',
-    solicitante_telefono: '',
-    solicitante_email: '',
-    descripcion: '',
-    direccion: '',
+    tipo: "",
+    solicitante_nombre: "",
+    solicitante_ci: "",
+    solicitante_telefono: "",
+    solicitante_email: "",
+    descripcion: "",
+    direccion: "",
   });
 
   const [errores, setErrores] = useState<ErroresFormulario>(ERRORES_INICIAL);
   const [cargando, setCargando] = useState(false);
-  const [tramiteRegistrado, setTramiteRegistrado] = useState<Tramite | null>(null);
+  const [tramiteRegistrado, setTramiteRegistrado] = useState<Tramite | null>(
+    null,
+  );
   const [errorGeneral, setErrorGeneral] = useState<string | null>(null);
+
+  // Tipos dinámicos
+  const [tiposTramite, setTiposTramite] = useState<
+    { nombre: TipoTramite; dias_vencimiento: number }[]
+  >([]);
+  const [cargandoTipos, setCargandoTipos] = useState(true);
+
+  // Cargar tipos al montar
+  useEffect(() => {
+    obtenerTiposActivos().then((tipos) => {
+      setTiposTramite(tipos);
+      setCargandoTipos(false);
+    });
+  }, []);
 
   // ── Helpers ───────────────────────────────────────────────────────────────
 
@@ -95,7 +113,7 @@ export default function RegistroTramiteScreen({ onVolver }: Props) {
     setForm((prev) => ({ ...prev, [campo]: valor }));
     // Limpiar error del campo al escribir
     if (errores[campo as keyof ErroresFormulario]) {
-      setErrores((prev) => ({ ...prev, [campo]: '' }));
+      setErrores((prev) => ({ ...prev, [campo]: "" }));
     }
   };
 
@@ -106,44 +124,48 @@ export default function RegistroTramiteScreen({ onVolver }: Props) {
     let valido = true;
 
     if (!form.tipo) {
-      nuevosErrores.tipo = 'Seleccione el tipo de trámite.';
+      nuevosErrores.tipo = "Seleccione el tipo de trámite.";
       valido = false;
     }
 
     if (!form.solicitante_nombre.trim()) {
-      nuevosErrores.solicitante_nombre = 'El nombre del solicitante es obligatorio.';
+      nuevosErrores.solicitante_nombre =
+        "El nombre del solicitante es obligatorio.";
       valido = false;
     } else if (form.solicitante_nombre.trim().length < 3) {
-      nuevosErrores.solicitante_nombre = 'Ingrese el nombre completo.';
+      nuevosErrores.solicitante_nombre = "Ingrese el nombre completo.";
       valido = false;
     }
 
     if (!form.solicitante_ci.trim()) {
-      nuevosErrores.solicitante_ci = 'El número de CI es obligatorio.';
+      nuevosErrores.solicitante_ci = "El número de CI es obligatorio.";
       valido = false;
     } else if (!/^\d{5,10}$/.test(form.solicitante_ci.trim())) {
-      nuevosErrores.solicitante_ci = 'El CI debe contener entre 5 y 10 dígitos.';
+      nuevosErrores.solicitante_ci =
+        "El CI debe contener entre 5 y 10 dígitos.";
       valido = false;
     }
 
     if (!form.solicitante_telefono.trim()) {
-      nuevosErrores.solicitante_telefono = 'El teléfono es obligatorio.';
+      nuevosErrores.solicitante_telefono = "El teléfono es obligatorio.";
       valido = false;
     } else if (!/^\d{7,10}$/.test(form.solicitante_telefono.trim())) {
-      nuevosErrores.solicitante_telefono = 'Ingrese un número de teléfono válido.';
+      nuevosErrores.solicitante_telefono =
+        "Ingrese un número de teléfono válido.";
       valido = false;
     }
 
     if (!form.descripcion.trim()) {
-      nuevosErrores.descripcion = 'La descripción del trámite es obligatoria.';
+      nuevosErrores.descripcion = "La descripción del trámite es obligatoria.";
       valido = false;
     } else if (form.descripcion.trim().length < 10) {
-      nuevosErrores.descripcion = 'La descripción debe tener al menos 10 caracteres.';
+      nuevosErrores.descripcion =
+        "La descripción debe tener al menos 10 caracteres.";
       valido = false;
     }
 
     if (!form.direccion.trim()) {
-      nuevosErrores.direccion = 'La dirección es obligatoria.';
+      nuevosErrores.direccion = "La dirección es obligatoria.";
       valido = false;
     }
 
@@ -160,15 +182,19 @@ export default function RegistroTramiteScreen({ onVolver }: Props) {
 
     setCargando(true);
 
+    const tipoSeleccionado = tiposTramite.find((t) => t.nombre === form.tipo);
+    const diasVencimiento = tipoSeleccionado?.dias_vencimiento || 7; // fallback
+
     const datos: DatosTramite = {
-      tipo:                   form.tipo as TipoTramite,
-      solicitante_nombre:     form.solicitante_nombre.trim(),
-      solicitante_ci:         form.solicitante_ci.trim(),
-      solicitante_telefono:   form.solicitante_telefono.trim(),
-      solicitante_email:      form.solicitante_email.trim(),
-      descripcion:            form.descripcion.trim(),
-      direccion:              form.direccion.trim(),
-      registrado_por:         usuarioActivo.usuario,
+      tipo: form.tipo as TipoTramite,
+      solicitante_nombre: form.solicitante_nombre.trim(),
+      solicitante_ci: form.solicitante_ci.trim(),
+      solicitante_telefono: form.solicitante_telefono.trim(),
+      solicitante_email: form.solicitante_email.trim(),
+      descripcion: form.descripcion.trim(),
+      direccion: form.direccion.trim(),
+      registrado_por: usuarioActivo.usuario,
+      dias_vencimiento: diasVencimiento,
     };
 
     const resultado = await registrarTramite(datos);
@@ -177,7 +203,7 @@ export default function RegistroTramiteScreen({ onVolver }: Props) {
     if (resultado.exito && resultado.tramite) {
       setTramiteRegistrado(resultado.tramite);
     } else {
-      setErrorGeneral(resultado.error ?? 'Error al registrar el trámite.');
+      setErrorGeneral(resultado.error ?? "Error al registrar el trámite.");
     }
   };
 
@@ -194,29 +220,66 @@ export default function RegistroTramiteScreen({ onVolver }: Props) {
           <Text style={styles.exitoTitulo}>¡Trámite registrado con éxito!</Text>
 
           <View style={styles.exitoCard}>
-            <FilaDato icono="barcode-outline"      etiqueta="Número de trámite"  valor={tramiteRegistrado.numero_tramite} destacado />
-            <FilaDato icono="document-text-outline" etiqueta="Tipo"              valor={tramiteRegistrado.tipo} />
-            <FilaDato icono="person-outline"        etiqueta="Solicitante"       valor={tramiteRegistrado.solicitante_nombre} />
-            <FilaDato icono="time-outline"          etiqueta="Fecha de registro" valor={formatearFecha(tramiteRegistrado.fecha_registro)} />
-            <FilaDato icono="calendar-outline"      etiqueta="Vence el"          valor={formatearFecha(tramiteRegistrado.fecha_vencimiento)} />
-            <FilaDato icono="ellipse-outline"       etiqueta="Estado inicial"    valor={tramiteRegistrado.estado} />
+            <FilaDato
+              icono="barcode-outline"
+              etiqueta="Número de trámite"
+              valor={tramiteRegistrado.numero_tramite}
+              destacado
+            />
+            <FilaDato
+              icono="document-text-outline"
+              etiqueta="Tipo"
+              valor={tramiteRegistrado.tipo}
+            />
+            <FilaDato
+              icono="person-outline"
+              etiqueta="Solicitante"
+              valor={tramiteRegistrado.solicitante_nombre}
+            />
+            <FilaDato
+              icono="time-outline"
+              etiqueta="Fecha de registro"
+              valor={formatearFecha(tramiteRegistrado.fecha_registro)}
+            />
+            <FilaDato
+              icono="calendar-outline"
+              etiqueta="Vence el"
+              valor={formatearFecha(tramiteRegistrado.fecha_vencimiento)}
+            />
+            <FilaDato
+              icono="ellipse-outline"
+              etiqueta="Estado inicial"
+              valor={tramiteRegistrado.estado}
+            />
           </View>
 
           <View style={styles.notaInfo}>
-            <Ionicons name="information-circle-outline" size={15} color="#0369a1" />
+            <Ionicons
+              name="information-circle-outline"
+              size={15}
+              color="#0369a1"
+            />
             <Text style={styles.notaInfoTexto}>
-              Guarde el número de trámite para hacer seguimiento de su solicitud.
+              Guarde el número de trámite para hacer seguimiento de su
+              solicitud.
             </Text>
           </View>
 
-          <TouchableOpacity style={styles.botonNuevo} onPress={() => {
-            setTramiteRegistrado(null);
-            setForm({
-              tipo: '', solicitante_nombre: '', solicitante_ci: '',
-              solicitante_telefono: '', solicitante_email: '',
-              descripcion: '', direccion: '',
-            });
-          }}>
+          <TouchableOpacity
+            style={styles.botonNuevo}
+            onPress={() => {
+              setTramiteRegistrado(null);
+              setForm({
+                tipo: "",
+                solicitante_nombre: "",
+                solicitante_ci: "",
+                solicitante_telefono: "",
+                solicitante_email: "",
+                descripcion: "",
+                direccion: "",
+              });
+            }}
+          >
             <Ionicons name="add-circle-outline" size={18} color="#ffffff" />
             <Text style={styles.botonNuevoTexto}>Registrar otro trámite</Text>
           </TouchableOpacity>
@@ -251,53 +314,41 @@ export default function RegistroTramiteScreen({ onVolver }: Props) {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-
         {/* ── Sección 1: Tipo de trámite ── */}
         <View style={styles.seccion}>
-          <Text style={styles.seccionTitulo}>
-            <Ionicons name="list-outline" size={14} color="#0f2554" /> Tipo de trámite
-          </Text>
-          <Text style={styles.seccionObligatorio}>* Campo obligatorio</Text>
-
-          <View style={styles.tiposGrid}>
-            {TIPOS_TRAMITE.map((t) => (
-              <TouchableOpacity
-                key={t.valor}
-                style={[
-                  styles.tipoCard,
-                  form.tipo === t.valor && styles.tipoCardActivo,
-                  errores.tipo ? styles.tipoCardError : null,
-                ]}
-                onPress={() => actualizarCampo('tipo', t.valor)}
-                activeOpacity={0.75}
-              >
-                <Ionicons
-                  name={t.icono as any}
-                  size={22}
-                  color={form.tipo === t.valor ? '#ffffff' : '#0f2554'}
-                />
-                <Text style={[
-                  styles.tipoTexto,
-                  form.tipo === t.valor && styles.tipoTextoActivo,
-                ]}>
-                  {t.valor}
-                </Text>
-                <Text style={[
-                  styles.tipoDias,
-                  form.tipo === t.valor && styles.tipoDiasActivo,
-                ]}>
-                  {t.dias} días hábiles
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-          {errores.tipo ? <Text style={styles.errorTexto}>⚠ {errores.tipo}</Text> : null}
+          <SelectorConBusqueda
+            titulo="Tipo de trámite *"
+            opciones={tiposTramite.map((t) => t.nombre)}
+            valorSeleccionado={form.tipo}
+            onSeleccionar={(v) => actualizarCampo("tipo", v)}
+            placeholder="Buscar tipo de trámite..."
+            icono="list-outline"
+          />
+          {cargandoTipos && (
+            <View style={styles.cargandoTipos}>
+              <ActivityIndicator size="small" color="#0f2554" />
+              <Text style={styles.cargandoTexto}>Cargando tipos...</Text>
+            </View>
+          )}
+          {errores.tipo ? (
+            <Text style={styles.errorTexto}>⚠ {errores.tipo}</Text>
+          ) : null}
+          {form.tipo && (
+            <Text style={styles.diasVencimiento}>
+              <Ionicons name="time-outline" size={12} color="#6b7280" /> Vence
+              en{" "}
+              {tiposTramite.find((t) => t.nombre === form.tipo)
+                ?.dias_vencimiento || 7}{" "}
+              días hábiles
+            </Text>
+          )}
         </View>
 
         {/* ── Sección 2: Datos del solicitante ── */}
         <View style={styles.seccion}>
           <Text style={styles.seccionTitulo}>
-            <Ionicons name="person-outline" size={14} color="#0f2554" /> Datos del solicitante
+            <Ionicons name="person-outline" size={14} color="#0f2554" /> Datos
+            del solicitante
           </Text>
 
           <CampoTexto
@@ -305,7 +356,7 @@ export default function RegistroTramiteScreen({ onVolver }: Props) {
             icono="person-outline"
             placeholder="Ej: Juan Pérez Mamani"
             valor={form.solicitante_nombre}
-            onChange={(v) => actualizarCampo('solicitante_nombre', v)}
+            onChange={(v) => actualizarCampo("solicitante_nombre", v)}
             error={errores.solicitante_nombre}
             editable={!cargando}
           />
@@ -315,7 +366,7 @@ export default function RegistroTramiteScreen({ onVolver }: Props) {
             icono="card-outline"
             placeholder="Ej: 1234567"
             valor={form.solicitante_ci}
-            onChange={(v) => actualizarCampo('solicitante_ci', v)}
+            onChange={(v) => actualizarCampo("solicitante_ci", v)}
             error={errores.solicitante_ci}
             teclado="numeric"
             editable={!cargando}
@@ -326,7 +377,7 @@ export default function RegistroTramiteScreen({ onVolver }: Props) {
             icono="call-outline"
             placeholder="Ej: 70123456"
             valor={form.solicitante_telefono}
-            onChange={(v) => actualizarCampo('solicitante_telefono', v)}
+            onChange={(v) => actualizarCampo("solicitante_telefono", v)}
             error={errores.solicitante_telefono}
             teclado="numeric"
             editable={!cargando}
@@ -337,7 +388,7 @@ export default function RegistroTramiteScreen({ onVolver }: Props) {
             icono="mail-outline"
             placeholder="Ej: juan@correo.com"
             valor={form.solicitante_email}
-            onChange={(v) => actualizarCampo('solicitante_email', v)}
+            onChange={(v) => actualizarCampo("solicitante_email", v)}
             error=""
             teclado="email-address"
             editable={!cargando}
@@ -347,7 +398,8 @@ export default function RegistroTramiteScreen({ onVolver }: Props) {
         {/* ── Sección 3: Detalles del trámite ── */}
         <View style={styles.seccion}>
           <Text style={styles.seccionTitulo}>
-            <Ionicons name="document-text-outline" size={14} color="#0f2554" /> Detalles del trámite
+            <Ionicons name="document-text-outline" size={14} color="#0f2554" />{" "}
+            Detalles del trámite
           </Text>
 
           <CampoTexto
@@ -355,7 +407,7 @@ export default function RegistroTramiteScreen({ onVolver }: Props) {
             icono="location-outline"
             placeholder="Ej: Av. Principal Nº 123, zona centro"
             valor={form.direccion}
-            onChange={(v) => actualizarCampo('direccion', v)}
+            onChange={(v) => actualizarCampo("direccion", v)}
             error={errores.direccion}
             editable={!cargando}
           />
@@ -363,27 +415,32 @@ export default function RegistroTramiteScreen({ onVolver }: Props) {
           {/* Descripción — campo multilínea */}
           <View style={styles.campoGrupo}>
             <Text style={styles.campoEtiqueta}>Descripción del motivo *</Text>
-            <View style={[
-              styles.inputWrapper,
-              styles.inputMultilinea,
-              errores.descripcion ? styles.inputError : null,
-            ]}>
+            <View
+              style={[
+                styles.inputWrapper,
+                styles.inputMultilinea,
+                errores.descripcion ? styles.inputError : null,
+              ]}
+            >
               <TextInput
                 style={[styles.input, styles.inputAreaTexto]}
                 placeholder="Describa brevemente el motivo de su trámite..."
                 placeholderTextColor="#9ca3af"
                 value={form.descripcion}
-                onChangeText={(v) => actualizarCampo('descripcion', v)}
+                onChangeText={(v) => actualizarCampo("descripcion", v)}
                 multiline
                 numberOfLines={4}
                 textAlignVertical="top"
                 editable={!cargando}
               />
             </View>
-            {errores.descripcion
-              ? <Text style={styles.errorTexto}>⚠ {errores.descripcion}</Text>
-              : <Text style={styles.contadorTexto}>{form.descripcion.length} caracteres</Text>
-            }
+            {errores.descripcion ? (
+              <Text style={styles.errorTexto}>⚠ {errores.descripcion}</Text>
+            ) : (
+              <Text style={styles.contadorTexto}>
+                {form.descripcion.length} caracteres
+              </Text>
+            )}
           </View>
         </View>
 
@@ -397,7 +454,10 @@ export default function RegistroTramiteScreen({ onVolver }: Props) {
 
         {/* ── Botón registrar ── */}
         <TouchableOpacity
-          style={[styles.botonRegistrar, cargando && styles.botonRegistrarDisabled]}
+          style={[
+            styles.botonRegistrar,
+            cargando && styles.botonRegistrarDisabled,
+          ]}
           onPress={handleRegistrar}
           disabled={cargando}
           activeOpacity={0.85}
@@ -405,7 +465,9 @@ export default function RegistroTramiteScreen({ onVolver }: Props) {
           {cargando ? (
             <View style={styles.filaIcono}>
               <ActivityIndicator color="#ffffff" size="small" />
-              <Text style={styles.botonRegistrarTexto}>Registrando trámite...</Text>
+              <Text style={styles.botonRegistrarTexto}>
+                Registrando trámite...
+              </Text>
             </View>
           ) : (
             <View style={styles.filaIcono}>
@@ -430,13 +492,19 @@ interface PropsCampo {
   valor: string;
   onChange: (v: string) => void;
   error: string;
-  teclado?: 'default' | 'numeric' | 'email-address';
+  teclado?: "default" | "numeric" | "email-address";
   editable?: boolean;
 }
 
 function CampoTexto({
-  etiqueta, icono, placeholder, valor, onChange, error,
-  teclado = 'default', editable = true,
+  etiqueta,
+  icono,
+  placeholder,
+  valor,
+  onChange,
+  error,
+  teclado = "default",
+  editable = true,
 }: PropsCampo) {
   return (
     <View style={styles.campoGrupo}>
@@ -472,10 +540,17 @@ interface PropsFilaDato {
 function FilaDato({ icono, etiqueta, valor, destacado }: PropsFilaDato) {
   return (
     <View style={styles.filaDato}>
-      <Ionicons name={icono as any} size={16} color="#6b7280" style={{ marginTop: 1 }} />
+      <Ionicons
+        name={icono as any}
+        size={16}
+        color="#6b7280"
+        style={{ marginTop: 1 }}
+      />
       <View style={{ flex: 1 }}>
         <Text style={styles.filaDatoEtiqueta}>{etiqueta}</Text>
-        <Text style={[styles.filaDatoValor, destacado && styles.filaDatoDestacado]}>
+        <Text
+          style={[styles.filaDatoValor, destacado && styles.filaDatoDestacado]}
+        >
           {valor}
         </Text>
       </View>
@@ -486,64 +561,67 @@ function FilaDato({ icono, etiqueta, valor, destacado }: PropsFilaDato) {
 // ─── Helper de fecha ──────────────────────────────────────────────────────────
 
 function formatearFecha(fechaISO: string): string {
-  return new Date(fechaISO).toLocaleString('es-BO', {
-    day: '2-digit', month: '2-digit', year: 'numeric',
-    hour: '2-digit', minute: '2-digit',
+  return new Date(fechaISO).toLocaleString("es-BO", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
   });
 }
 
 // ─── Estilos ──────────────────────────────────────────────────────────────────
 
-const isWeb = Platform.OS === 'web';
+const isWeb = Platform.OS === "web";
 
 const styles = StyleSheet.create({
   contenedor: {
     flex: 1,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: "#f1f5f9",
   },
 
   // ── Cabecera ──────────────────────────────────────────────────────────────
   cabecera: {
-    backgroundColor: '#0f2554',
+    backgroundColor: "#0f2554",
     paddingTop: isWeb ? 20 : 52,
     paddingBottom: 16,
     paddingHorizontal: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 12,
   },
   botonAtras: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#ffffff18',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "#ffffff18",
+    alignItems: "center",
+    justifyContent: "center",
   },
   cabeceraTitulo: {
     fontSize: 18,
-    fontWeight: '700',
-    color: '#ffffff',
+    fontWeight: "700",
+    color: "#ffffff",
   },
   cabeceraSubtitulo: {
     fontSize: 11,
-    color: '#93c5fd',
+    color: "#93c5fd",
   },
 
   scrollContenido: {
     padding: 16,
     maxWidth: 600,
-    width: '100%',
-    alignSelf: 'center',
+    width: "100%",
+    alignSelf: "center",
   },
 
   // ── Secciones ─────────────────────────────────────────────────────────────
   seccion: {
-    backgroundColor: '#ffffff',
+    backgroundColor: "#ffffff",
     borderRadius: 16,
     padding: 16,
     marginBottom: 14,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 6,
@@ -551,15 +629,15 @@ const styles = StyleSheet.create({
   },
   seccionTitulo: {
     fontSize: 13,
-    fontWeight: '700',
-    color: '#0f2554',
+    fontWeight: "700",
+    color: "#0f2554",
     letterSpacing: 0.3,
     marginBottom: 4,
-    textTransform: 'uppercase',
+    textTransform: "uppercase",
   },
   seccionObligatorio: {
     fontSize: 11,
-    color: '#ef4444',
+    color: "#ef4444",
     marginBottom: 14,
   },
 
@@ -568,37 +646,37 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   tipoCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 12,
     padding: 14,
     borderRadius: 12,
     borderWidth: 1.5,
-    borderColor: '#e5e7eb',
-    backgroundColor: '#f9fafb',
+    borderColor: "#e5e7eb",
+    backgroundColor: "#f9fafb",
   },
   tipoCardActivo: {
-    backgroundColor: '#0f2554',
-    borderColor: '#0f2554',
+    backgroundColor: "#0f2554",
+    borderColor: "#0f2554",
   },
   tipoCardError: {
-    borderColor: '#fca5a5',
+    borderColor: "#fca5a5",
   },
   tipoTexto: {
     flex: 1,
     fontSize: 14,
-    fontWeight: '600',
-    color: '#1e293b',
+    fontWeight: "600",
+    color: "#1e293b",
   },
   tipoTextoActivo: {
-    color: '#ffffff',
+    color: "#ffffff",
   },
   tipoDias: {
     fontSize: 11,
-    color: '#94a3b8',
+    color: "#94a3b8",
   },
   tipoDiasActivo: {
-    color: '#93c5fd',
+    color: "#93c5fd",
   },
 
   // ── Campos de texto ───────────────────────────────────────────────────────
@@ -607,34 +685,34 @@ const styles = StyleSheet.create({
   },
   campoEtiqueta: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#374151',
+    fontWeight: "600",
+    color: "#374151",
     marginBottom: 6,
   },
   inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     borderWidth: 1.5,
-    borderColor: '#e5e7eb',
+    borderColor: "#e5e7eb",
     borderRadius: 10,
-    backgroundColor: '#f9fafb',
+    backgroundColor: "#f9fafb",
     paddingHorizontal: 12,
     height: 48,
     gap: 8,
   },
   inputMultilinea: {
-    height: 'auto',
-    alignItems: 'flex-start',
+    height: "auto",
+    alignItems: "flex-start",
     paddingVertical: 10,
   },
   inputError: {
-    borderColor: '#ef4444',
-    backgroundColor: '#fff5f5',
+    borderColor: "#ef4444",
+    backgroundColor: "#fff5f5",
   },
   input: {
     flex: 1,
     fontSize: 14,
-    color: '#111827',
+    color: "#111827",
     paddingVertical: 0,
   },
   inputAreaTexto: {
@@ -642,73 +720,89 @@ const styles = StyleSheet.create({
     paddingTop: 0,
   },
   errorTexto: {
-    color: '#ef4444',
+    color: "#ef4444",
     fontSize: 12,
     marginTop: 4,
     marginLeft: 2,
   },
+  cargandoTipos: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginTop: 8,
+  },
+  cargandoTexto: {
+    color: "#6b7280",
+    fontSize: 12,
+  },
+  diasVencimiento: {
+    fontSize: 12,
+    color: "#6b7280",
+    marginTop: 6,
+    fontStyle: "italic",
+  },
   contadorTexto: {
-    color: '#94a3b8',
+    color: "#94a3b8",
     fontSize: 11,
     marginTop: 4,
-    textAlign: 'right',
+    textAlign: "right",
   },
 
   // ── Error general ─────────────────────────────────────────────────────────
   errorBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
-    backgroundColor: '#fef2f2',
+    backgroundColor: "#fef2f2",
     borderWidth: 1,
-    borderColor: '#fca5a5',
+    borderColor: "#fca5a5",
     borderRadius: 10,
     padding: 12,
     marginBottom: 14,
   },
   errorBannerTexto: {
-    color: '#dc2626',
+    color: "#dc2626",
     fontSize: 13,
     flex: 1,
   },
 
   // ── Botón registrar ───────────────────────────────────────────────────────
   botonRegistrar: {
-    backgroundColor: '#0f2554',
+    backgroundColor: "#0f2554",
     borderRadius: 14,
     height: 54,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#0f2554',
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#0f2554",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.35,
     shadowRadius: 8,
     elevation: 6,
   },
   botonRegistrarDisabled: {
-    backgroundColor: '#94a3b8',
+    backgroundColor: "#94a3b8",
     shadowOpacity: 0,
     elevation: 0,
   },
   botonRegistrarTexto: {
-    color: '#ffffff',
+    color: "#ffffff",
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: "700",
     letterSpacing: 0.5,
   },
   filaIcono: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
   },
 
   // ── Pantalla de éxito ─────────────────────────────────────────────────────
   exitoContenido: {
     padding: 24,
-    alignItems: 'center',
+    alignItems: "center",
     maxWidth: 520,
-    width: '100%',
-    alignSelf: 'center',
+    width: "100%",
+    alignSelf: "center",
   },
   exitoIcono: {
     marginBottom: 12,
@@ -716,17 +810,17 @@ const styles = StyleSheet.create({
   },
   exitoTitulo: {
     fontSize: 20,
-    fontWeight: '800',
-    color: '#0f2554',
-    textAlign: 'center',
+    fontWeight: "800",
+    color: "#0f2554",
+    textAlign: "center",
     marginBottom: 20,
   },
   exitoCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: "#ffffff",
     borderRadius: 16,
     padding: 16,
-    width: '100%',
-    shadowColor: '#000',
+    width: "100%",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08,
     shadowRadius: 12,
@@ -735,78 +829,78 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   filaDato: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 10,
     paddingBottom: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: "#f1f5f9",
   },
   filaDatoEtiqueta: {
     fontSize: 11,
-    color: '#94a3b8',
-    fontWeight: '500',
-    textTransform: 'uppercase',
+    color: "#94a3b8",
+    fontWeight: "500",
+    textTransform: "uppercase",
     letterSpacing: 0.3,
   },
   filaDatoValor: {
     fontSize: 14,
-    color: '#1e293b',
-    fontWeight: '600',
+    color: "#1e293b",
+    fontWeight: "600",
     marginTop: 2,
   },
   filaDatoDestacado: {
     fontSize: 18,
-    color: '#0f2554',
-    fontWeight: '800',
+    color: "#0f2554",
+    fontWeight: "800",
     letterSpacing: 1,
   },
   notaInfo: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 8,
-    alignItems: 'flex-start',
-    backgroundColor: '#eff6ff',
+    alignItems: "flex-start",
+    backgroundColor: "#eff6ff",
     borderRadius: 10,
     padding: 12,
     marginBottom: 20,
-    width: '100%',
+    width: "100%",
   },
   notaInfoTexto: {
     flex: 1,
     fontSize: 13,
-    color: '#0369a1',
+    color: "#0369a1",
     lineHeight: 18,
   },
   botonNuevo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     gap: 8,
-    backgroundColor: '#0f2554',
+    backgroundColor: "#0f2554",
     borderRadius: 12,
     height: 50,
-    width: '100%',
+    width: "100%",
     marginBottom: 10,
   },
   botonNuevoTexto: {
-    color: '#ffffff',
-    fontWeight: '700',
+    color: "#ffffff",
+    fontWeight: "700",
     fontSize: 15,
   },
   botonVolver: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     gap: 8,
     borderWidth: 1.5,
-    borderColor: '#e2e8f0',
+    borderColor: "#e2e8f0",
     borderRadius: 12,
     height: 50,
-    width: '100%',
-    backgroundColor: '#ffffff',
+    width: "100%",
+    backgroundColor: "#ffffff",
   },
   botonVolverTexto: {
-    color: '#374151',
-    fontWeight: '600',
+    color: "#374151",
+    fontWeight: "600",
     fontSize: 15,
   },
 });

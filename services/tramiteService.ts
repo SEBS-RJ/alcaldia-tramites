@@ -29,7 +29,8 @@ export interface DatosTramite {
   solicitante_email: string;
   descripcion: string;
   direccion: string;
-  registrado_por: string;       // usuario que registra (ciudadano o funcionario)
+  registrado_por: string;
+  dias_vencimiento: number;  // días para calcular fecha de vencimiento
 }
 
 export interface Tramite extends DatosTramite {
@@ -38,6 +39,8 @@ export interface Tramite extends DatosTramite {
   estado: EstadoTramite;
   fecha_registro: string;
   fecha_vencimiento: string;
+  unidad_asignada?: string;     // unidad asignada (opcional)
+  responsable?: string;          // responsable del trámite (opcional)
 }
 
 export interface ResultadoRegistro {
@@ -75,8 +78,7 @@ async function generarNumeroTramite(): Promise<string> {
 
 // ─── T-03 HU-2: Fecha automática + RF04: Fecha de vencimiento ────────────────
 
-function calcularFechaVencimiento(tipo: TipoTramite): Date {
-  const dias = DIAS_VENCIMIENTO[tipo];
+function calcularFechaVencimiento(dias: number): Date {
   const fecha = new Date();
   fecha.setDate(fecha.getDate() + dias);
   return fecha;
@@ -94,8 +96,8 @@ export async function registrarTramite(
     // T-03: Fecha de registro = ahora (se envía explícitamente para trazabilidad)
     const fecha_registro = new Date().toISOString();
 
-    // RF04: Fecha de vencimiento según tipo
-    const fecha_vencimiento = calcularFechaVencimiento(datos.tipo).toISOString();
+    // RF04: Fecha de vencimiento según días del tipo
+    const fecha_vencimiento = calcularFechaVencimiento(datos.dias_vencimiento).toISOString();
 
     const { data, error } = await supabase
       .from('tramites')
@@ -129,5 +131,42 @@ export async function registrarTramite(
       exito: false,
       error: 'Error de conexión. Verifique su internet e intente nuevamente.',
     };
+  }
+}
+
+// ─── Obtener tipos de trámite activos ─────────────────────────────────────────
+
+interface TipoConDias {
+  nombre: TipoTramite;
+  dias_vencimiento: number;
+}
+
+const TIPOS_FALLBACK: TipoConDias[] = [
+  { nombre: 'Licencia de funcionamiento', dias_vencimiento: 15 },
+  { nombre: 'Patente', dias_vencimiento: 10 },
+  { nombre: 'Certificación', dias_vencimiento: 7 },
+  { nombre: 'Reclamo vecinal', dias_vencimiento: 20 },
+  { nombre: 'Solicitud de obra', dias_vencimiento: 30 },
+];
+
+export async function obtenerTiposActivos(): Promise<TipoConDias[]> {
+  try {
+    const { data, error } = await supabase
+      .from('tipos_tramite')
+      .select('nombre, dias_vencimiento')
+      .eq('activo', true)
+      .order('nombre');
+
+    if (error || !data) {
+      return TIPOS_FALLBACK;
+    }
+
+    const tipos = data.map(item => ({
+      nombre: item.nombre as TipoTramite,
+      dias_vencimiento: item.dias_vencimiento || 7, // fallback a 7 días
+    }));
+    return tipos.length > 0 ? tipos : TIPOS_FALLBACK;
+  } catch {
+    return TIPOS_FALLBACK;
   }
 }

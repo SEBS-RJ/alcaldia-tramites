@@ -1,5 +1,5 @@
-// ─── LoginForm.tsx — T-01, T-02, T-03, T-04, T-05 (HU-1) ───────────────────
-// Formulario de login conectado a Supabase con hash SHA-256 y auditoría.
+// ─── LoginForm.tsx — T-01 a T-05 (HU-1) + Permisos Dinámicos ────────────────
+// iniciarSesionContexto ahora es async (carga módulos del rol desde BD).
 
 import React, { useState } from "react";
 import {
@@ -14,7 +14,6 @@ import {
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
-
 import LoginHeader from "./LoginHeader";
 import LoginFooter from "./LoginFooter";
 import PantallaRol from "./PantallaRol";
@@ -22,97 +21,83 @@ import { iniciarSesion, cerrarSesion } from "../services/authService";
 import { useSesion } from "../context/SesionContext";
 import { styles } from "../styles/loginStyles";
 
-// ─── Tipos ────────────────────────────────────────────────────────────────────
-
 interface FormErrors {
   usuario: string;
   contrasena: string;
   credenciales: string;
 }
 
-// ─── Componente ───────────────────────────────────────────────────────────────
+function validarContrasenaLogin(contrasena: string): string {
+  if (!contrasena.trim()) return "La contraseña es obligatoria.";
+  if (contrasena.length < 8)
+    return "La contraseña debe tener al menos 8 caracteres.";
+  if (!/[A-Z]/.test(contrasena))
+    return "La contraseña debe incluir al menos una letra mayúscula.";
+  if (!/[a-z]/.test(contrasena))
+    return "La contraseña debe incluir al menos una letra minúscula.";
+  if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(contrasena))
+    return "La contraseña debe incluir al menos un carácter especial (!@#$%...).";
+  return "";
+}
 
 export default function LoginForm() {
-  const { usuarioActivo, iniciarSesionContexto, cerrarSesionContexto } =
-    useSesion();
+  const {
+    usuarioActivo,
+    iniciarSesionContexto,
+    cerrarSesionContexto,
+    cargandoModulos,
+  } = useSesion();
 
-  const [usuario, setUsuario] = useState<string>("");
-  const [contrasena, setContrasena] = useState<string>("");
-  const [mostrarContrasena, setMostrarContrasena] = useState<boolean>(false);
-  const [cargando, setCargando] = useState<boolean>(false);
-
+  const [usuario, setUsuario] = useState("");
+  const [contrasena, setContrasena] = useState("");
+  const [mostrarContrasena, setMostrarContrasena] = useState(false);
+  const [cargando, setCargando] = useState(false);
   const [errores, setErrores] = useState<FormErrors>({
     usuario: "",
     contrasena: "",
     credenciales: "",
   });
 
-  // ── Validación de campos ────────────────────────────────────────────────
-
   const validarFormulario = (): boolean => {
-    const nuevosErrores: FormErrors = {
-      usuario: "",
-      contrasena: "",
-      credenciales: "",
-    };
-    let esValido = true;
-
+    const e: FormErrors = { usuario: "", contrasena: "", credenciales: "" };
+    let ok = true;
     if (!usuario.trim()) {
-      nuevosErrores.usuario = "El usuario es obligatorio.";
-      esValido = false;
+      e.usuario = "El usuario es obligatorio.";
+      ok = false;
     }
-
-    if (!contrasena.trim()) {
-      nuevosErrores.contrasena = "La contraseña es obligatoria.";
-      esValido = false;
-    } else if (contrasena.length < 4) {
-      nuevosErrores.contrasena =
-        "La contraseña debe tener al menos 4 caracteres.";
-      esValido = false;
+    const errPass = validarContrasenaLogin(contrasena);
+    if (errPass) {
+      e.contrasena = errPass;
+      ok = false;
     }
-
-    setErrores(nuevosErrores);
-    return esValido;
+    setErrores(e);
+    return ok;
   };
-
-  // ── Login con hash y auditoría (T-02, T-05 HU-1) ───────────────────────
 
   const handleLogin = async () => {
     setErrores({ usuario: "", contrasena: "", credenciales: "" });
     if (!validarFormulario()) return;
-
     setCargando(true);
     const resultado = await iniciarSesion(usuario, contrasena);
-    setCargando(false);
-
     if (resultado.exito && resultado.usuarioSesion) {
-      iniciarSesionContexto(resultado.usuarioSesion);
+      await iniciarSesionContexto(resultado.usuarioSesion);
     } else {
-      setErrores((prev) => ({
-        ...prev,
+      setErrores((p) => ({
+        ...p,
         credenciales: resultado.error ?? "Error al iniciar sesión.",
       }));
     }
+    setCargando(false);
   };
 
-  // ── Cierre de sesión con auditoría (T-04 HU-1, T-02 HU-5) ─────────────
-
   const handleLogout = async () => {
-    if (usuarioActivo) {
-      await cerrarSesion(usuarioActivo);
-    }
+    if (usuarioActivo) await cerrarSesion(usuarioActivo);
     cerrarSesionContexto();
     setUsuario("");
     setContrasena("");
   };
 
-  // ── Si hay sesión activa, mostrar pantalla por rol (T-03) ───────────────
-
-  if (usuarioActivo) {
-    return <PantallaRol onLogout={handleLogout} />;
-  }
-
-  // ── Formulario principal ────────────────────────────────────────────────
+  if (usuarioActivo) return <PantallaRol onLogout={handleLogout} />;
 
   return (
     <KeyboardAvoidingView
@@ -126,14 +111,12 @@ export default function LoginForm() {
         showsVerticalScrollIndicator={false}
       >
         <LoginHeader />
-
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Iniciar Sesión</Text>
           <Text style={styles.cardSubtitle}>
             Ingrese sus credenciales institucionales
           </Text>
 
-          {/* ── Campo: Usuario ── */}
           <View style={styles.fieldGroup}>
             <Text style={styles.label}>Usuario</Text>
             <View
@@ -148,10 +131,10 @@ export default function LoginForm() {
                 placeholder="Ingrese su usuario"
                 placeholderTextColor="#9ca3af"
                 value={usuario}
-                onChangeText={(text) => {
-                  setUsuario(text);
+                onChangeText={(t) => {
+                  setUsuario(t);
                   if (errores.usuario)
-                    setErrores((prev) => ({ ...prev, usuario: "" }));
+                    setErrores((p) => ({ ...p, usuario: "" }));
                 }}
                 autoCapitalize="none"
                 autoCorrect={false}
@@ -163,7 +146,6 @@ export default function LoginForm() {
             ) : null}
           </View>
 
-          {/* ── Campo: Contraseña ── */}
           <View style={styles.fieldGroup}>
             <Text style={styles.label}>Contraseña</Text>
             <View
@@ -175,13 +157,13 @@ export default function LoginForm() {
               <Ionicons name="lock-closed-outline" size={18} color="#6b7280" />
               <TextInput
                 style={styles.input}
-                placeholder="Ingrese su contraseña"
+                placeholder="Mín. 8 chars, mayúscula, especial"
                 placeholderTextColor="#9ca3af"
                 value={contrasena}
-                onChangeText={(text) => {
-                  setContrasena(text);
+                onChangeText={(t) => {
+                  setContrasena(t);
                   if (errores.contrasena)
-                    setErrores((prev) => ({ ...prev, contrasena: "" }));
+                    setErrores((p) => ({ ...p, contrasena: "" }));
                 }}
                 secureTextEntry={!mostrarContrasena}
                 autoCapitalize="none"
@@ -189,7 +171,7 @@ export default function LoginForm() {
                 editable={!cargando}
               />
               <TouchableOpacity
-                onPress={() => setMostrarContrasena(!mostrarContrasena)}
+                onPress={() => setMostrarContrasena((v) => !v)}
                 style={styles.eyeButton}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
@@ -205,7 +187,6 @@ export default function LoginForm() {
             ) : null}
           </View>
 
-          {/* ── Banner: credenciales incorrectas ── */}
           {errores.credenciales ? (
             <View style={styles.errorBanner}>
               <MaterialIcons name="error-outline" size={18} color="#dc2626" />
@@ -213,24 +194,39 @@ export default function LoginForm() {
             </View>
           ) : null}
 
-          {/* ── Botón de ingreso ── */}
           <TouchableOpacity
-            style={[styles.loginButton, cargando && styles.loginButtonDisabled]}
+            style={[
+              styles.loginButton,
+              (cargando || cargandoModulos) && styles.loginButtonDisabled,
+            ]}
             onPress={handleLogin}
-            disabled={cargando}
+            disabled={cargando || cargandoModulos}
             activeOpacity={0.85}
           >
-            {cargando ? (
+            {cargando || cargandoModulos ? (
               <View style={styles.loadingRow}>
-                <ActivityIndicator color="#ffffff" size="small" />
-                <Text style={styles.loginButtonText}>Verificando...</Text>
+                <ActivityIndicator color="#fff" size="small" />
+                <Text style={styles.loginButtonText}>
+                  {cargandoModulos ? "Cargando permisos..." : "Verificando..."}
+                </Text>
               </View>
             ) : (
               <Text style={styles.loginButtonText}>Ingresar al Sistema</Text>
             )}
           </TouchableOpacity>
-        </View>
 
+          <View style={styles.notaContrasena}>
+            <Ionicons
+              name="shield-checkmark-outline"
+              size={13}
+              color="#0369a1"
+            />
+            <Text style={styles.notaContrasenaTexto}>
+              La contraseña debe tener mínimo 8 caracteres, incluir mayúscula,
+              minúscula y un carácter especial.
+            </Text>
+          </View>
+        </View>
         <LoginFooter />
       </ScrollView>
     </KeyboardAvoidingView>

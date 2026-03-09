@@ -173,6 +173,23 @@ export const styles = StyleSheet.create({
     gap: 8,
   },
 
+  // ── Nota de política de contraseñas (Mejora Retrospectiva Sprint 1) ───────
+  notaContrasena: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 6,
+    backgroundColor: '#eff6ff',
+    borderRadius: 8,
+    padding: 10,
+    marginTop: 14,
+  },
+  notaContrasenaTexto: {
+    flex: 1,
+    fontSize: 11,
+    color: '#0369a1',
+    lineHeight: 16,
+  },
+
   // ── Pie de página ─────────────────────────────────────────────────────────
   footer: {
     marginTop: 24,
@@ -265,10 +282,15 @@ export const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   moduloEtiqueta: {
-    flex: 1,
     fontSize: 15,
     fontWeight: '600',
     color: '#1e293b',
+  },
+  // ── Descripción breve del módulo (Mejora) ─────────────────────────────────
+  moduloDescripcion: {
+    fontSize: 11,
+    color: '#94a3b8',
+    marginTop: 2,
   },
 
   // ── Nota de sprint ────────────────────────────────────────────────────────
