@@ -1,6 +1,3 @@
-// ─── LoginForm.tsx — T-01 a T-05 (HU-1) + Permisos Dinámicos ────────────────
-// iniciarSesionContexto ahora es async (carga módulos del rol desde BD).
-
 import React, { useState } from "react";
 import {
   View,
@@ -221,10 +218,6 @@ export default function LoginForm() {
               size={13}
               color="#0369a1"
             />
-            <Text style={styles.notaContrasenaTexto}>
-              La contraseña debe tener mínimo 8 caracteres, incluir mayúscula,
-              minúscula y un carácter especial.
-            </Text>
           </View>
         </View>
         <LoginFooter />

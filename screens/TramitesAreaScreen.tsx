@@ -1,6 +1,3 @@
-// ─── TramitesAreaScreen.tsx — Jefe de Área ───────────────────────────────────
-// Muestra trámites asignados a la unidad del Jefe (filtro por unidad_asignada).
-
 import React, { useState, useEffect, useCallback } from "react";
 import {
   View,

@@ -1,7 +1,3 @@
-// ─── configuracionService.ts — RF14 ──────────────────────────────────────────
-// Gestiona tipos de trámite personalizables y parámetros generales del sistema.
-// Los datos se persisten en Supabase (tabla configuracion_sistema).
-
 import { supabase } from '../lib/supabase';
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────

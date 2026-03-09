@@ -1,9 +1,3 @@
-// ─── ConsultaTramiteScreen.tsx — HU-4 (Sprint 2) ────────────────────────────
-// T-01: Búsqueda por número único
-// T-02: Visualización del estado actual
-// T-03: Historial de cambios con fecha, usuario y acción
-// Acceso: Funcionario Municipal y Jefe de Área
-
 import React, { useState } from "react";
 import {
   View,

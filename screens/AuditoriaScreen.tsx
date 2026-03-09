@@ -1,8 +1,3 @@
-// ─── AuditoriaScreen.tsx — T-03 y T-04 (HU-5) ───────────────────────────────
-// Pantalla de consulta de auditoría con filtros por usuario, acción y fecha.
-// Incluye panel de pruebas funcionales (T-04) visible solo para Administrador.
-// Solo accesible para el rol Administrador (control de acceso T-03 HU-1).
-
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,

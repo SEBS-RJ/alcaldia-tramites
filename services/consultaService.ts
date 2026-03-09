@@ -1,8 +1,3 @@
-// ─── consultaService.ts — HU-4 (Sprint 2) ────────────────────────────────────
-// T-01 HU-4: Búsqueda de trámite por número único
-// T-02 HU-4: Visualización del estado actual
-// T-03 HU-4: Historial de cambios con fecha, usuario y acción
-
 import { supabase } from '../lib/supabase';
 import { Tramite } from './tramiteService';
 

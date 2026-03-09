@@ -1,9 +1,3 @@
-// ─── documentoService.ts — HU-3 (Sprint 3) ───────────────────────────────────
-// T-19: Estructura de almacenamiento en Supabase Storage
-// T-20: Carga de archivos vinculados al trámite
-// T-21: Validación de tamaño máximo y formatos aceptados (PDF, JPG, PNG)
-// T-23: Registro automático de carga en auditoría
-
 import { supabase } from '../lib/supabase';
 import { registrarAccion } from './auditoriaService';
 

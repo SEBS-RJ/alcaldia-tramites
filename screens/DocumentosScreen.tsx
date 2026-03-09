@@ -1,10 +1,3 @@
-// ─── DocumentosScreen.tsx — HU-3 (Sprint 3) ─────────────────────────────────
-// T-19: Almacenamiento en Supabase Storage (bucket tramites-documentos)
-// T-20: Carga de archivos vinculados al trámite
-// T-21: Validación de formato (PDF, JPG, PNG) y tamaño máximo (5 MB)
-// T-22: Visualización y descarga segura de documentos
-// T-23: Registro automático en auditoría
-
 import React, { useState, useEffect, useCallback } from "react";
 import {
   View,

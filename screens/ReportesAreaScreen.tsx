@@ -1,6 +1,3 @@
-// ─── ReportesAreaScreen.tsx — Jefe de Área ───────────────────────────────────
-// Estadísticas de trámites: totales por estado, por tipo y tiempos promedio.
-
 import React, { useState, useEffect } from "react";
 import {
   View,

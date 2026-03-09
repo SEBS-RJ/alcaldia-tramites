@@ -1,7 +1,3 @@
-// ─── SesionContext.tsx — T-03 (HU-1) + Sistema de Permisos Dinámicos ─────────
-// Al iniciar sesión, carga los módulos del rol desde Supabase.
-// PantallaRol lee modulosActivos en lugar de una lista hardcodeada.
-
 import React, { createContext, useContext, useState, ReactNode } from "react";
 import { UsuarioSesion, Rol } from "../services/authService";
 import {

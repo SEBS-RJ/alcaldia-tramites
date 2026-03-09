@@ -1,7 +1,3 @@
-// ─── ConfiguracionScreen.tsx — RF14 ──────────────────────────────────────────
-// Tipos de trámite configurables + parámetros generales del sistema.
-// Solo accesible para Administrador.
-
 import React, { useState, useEffect, useCallback } from "react";
 import {
   View,

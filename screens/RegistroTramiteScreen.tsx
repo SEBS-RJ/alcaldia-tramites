@@ -1,8 +1,3 @@
-// ─── RegistroTramiteScreen.tsx — T-01 y T-04 (HU-2) ─────────────────────────
-// Formulario digital para registrar un nuevo trámite municipal.
-// T-01: Campos obligatorios con estructura de datos y validaciones visuales.
-// T-04: Validación que impide guardar con campos incompletos.
-
 import React, { useState, useEffect } from "react";
 import {
   View,

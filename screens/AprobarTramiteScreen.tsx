@@ -1,7 +1,3 @@
-// ─── AprobarTramiteScreen.tsx — Jefe de Área ─────────────────────────────────
-// Busca un trámite, muestra su estado e historial, y permite aprobarlo
-// o rechazarlo registrando justificación y actualizando historial + auditoría.
-
 import React, { useState } from "react";
 import {
   View,

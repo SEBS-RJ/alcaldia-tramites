@@ -1,7 +1,3 @@
-// ─── usuarioService.ts — Mejoras Retrospectiva Sprint 1 ──────────────────────
-// Mejora 1: Validación robusta de contraseñas (8+ chars, mayúscula, minúscula, especial)
-// Mejora 2: CRUD completo de usuarios con roles dinámicos para el Administrador
-
 import { supabase } from '../lib/supabase';
 import { hashSHA256 } from './hashService';
 import { registrarAccion } from './auditoriaService';

@@ -1,7 +1,3 @@
-// ─── GestionUsuariosScreen.tsx — CRUD + Permisos Dinámicos ───────────────────
-// Al crear un usuario: elige perfil base y ajusta módulos con checkboxes.
-// Al editar: puede cambiar rol y reconfigurar módulos del rol.
-
 import React, { useState, useEffect, useCallback } from "react";
 import {
   View,

@@ -1,12 +1,4 @@
-// ─── permisosService.ts ───────────────────────────────────────────────────────
-// Lee y escribe permisos dinámicos por rol desde Supabase.
-// Permite que el Administrador configure qué módulos tiene cada rol.
-
 import { supabase } from '../lib/supabase';
-
-// ─── Definición local de todos los módulos disponibles ───────────────────────
-// Usada como fallback si la tabla modulos_sistema no existe aún,
-// y como fuente de verdad para íconos y etiquetas en la UI.
 
 export interface ModuloSistema {
   id:          string;

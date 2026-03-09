@@ -1,6 +1,3 @@
-// ─── PantallaRol.tsx — Sistema de Permisos Dinámicos ─────────────────────────
-// Los módulos se cargan desde Supabase al hacer login (via SesionContext).
-
 import React, { useState } from "react";
 import {
   View,

@@ -1,6 +1,3 @@
-// ─── reporteService.ts — Módulo Admin ────────────────────────────────────────
-// Lista completa de trámites con filtros, paginación y exportación CSV
-
 import { supabase } from '../lib/supabase';
 import { Tramite, TipoTramite, EstadoTramite } from './tramiteService';
 

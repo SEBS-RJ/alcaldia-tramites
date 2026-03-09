@@ -1,8 +1,3 @@
-// ─── asignacionService.ts — HU-6 (Sprint 2) ──────────────────────────────────
-// T-01 HU-6: Módulo para asignar trámite a unidad o responsable
-// T-02 HU-6: Actualización del responsable en el flujo
-// T-03 HU-6: Registro automático de la asignación en auditoría
-
 import { supabase } from '../lib/supabase';
 import { registrarAccion } from './auditoriaService';
 

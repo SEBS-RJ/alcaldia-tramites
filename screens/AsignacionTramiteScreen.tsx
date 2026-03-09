@@ -1,6 +1,3 @@
-// ─── AsignacionTramiteScreen.tsx — Mejora: Lista + Búsqueda ─────────────────
-// Lista todos los trámites asignables con filtro por número, nombre o tipo.
-// Al seleccionar uno, se abre el formulario de asignación.
 import React, { useState, useEffect, useCallback } from "react";
 import {
   View,

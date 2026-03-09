@@ -1,6 +1,3 @@
-// ─── TodosTramitesScreen.tsx — Módulo Admin ───────────────────────────────────
-// Tabla completa de trámites con filtros, paginación y exportación CSV
-
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   View,

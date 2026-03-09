@@ -1,8 +1,3 @@
-// ─── Servicio de Trámites (HU-2) ─────────────────────────────────────────────
-// Gestiona el registro de trámites contra Supabase.
-// T-02: Número único correlativo automático
-// T-03: Fecha y hora del sistema automática
-
 import { supabase } from '../lib/supabase';
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
@@ -30,7 +25,7 @@ export interface DatosTramite {
   descripcion: string;
   direccion: string;
   registrado_por: string;
-  dias_vencimiento: number;  // días para calcular fecha de vencimiento
+  dias_vencimiento: number;
 }
 
 export interface Tramite extends DatosTramite {
@@ -39,8 +34,8 @@ export interface Tramite extends DatosTramite {
   estado: EstadoTramite;
   fecha_registro: string;
   fecha_vencimiento: string;
-  unidad_asignada?: string;     // unidad asignada (opcional)
-  responsable?: string;          // responsable del trámite (opcional)
+  unidad_asignada?: string;     
+  responsable?: string;          
 }
 
 export interface ResultadoRegistro {

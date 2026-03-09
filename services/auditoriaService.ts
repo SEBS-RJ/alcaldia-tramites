@@ -1,7 +1,3 @@
-// ─── Servicio de Auditoría (T-01, T-02, T-03 HU-5) ──────────────────────────
-// Registra y consulta acciones críticas del sistema.
-// Cumple RNF04: auditoría de acciones de usuarios.
-
 import { supabase } from '../lib/supabase';
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
