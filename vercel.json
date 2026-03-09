@@ -1,6 +1,11 @@
 {
+  "buildCommand": "npx expo export -p web",
   "outputDirectory": "dist",
-  "routes": [
-    { "src": "/(.*)", "dest": "/index.html" }
-  ]
+  "framework": null,
+  "devCommand": "npx expo start --web",
+  "installCommand": "npm install",
+  "env": {
+    "EXPO_PUBLIC_SUPABASE_URL": "https://fggqorgreyjkrtxheorg.supabase.co",
+    "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZnZ3FvcmdyZXlqa3J0eGhlb3JnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI2MzUwNjgsImV4cCI6MjA4ODIxMTA2OH0.IwpRcG3bvGGcINDPt8w1TAO2DUAr-HpqqA0EWCxp0kM"
+  }
 }
